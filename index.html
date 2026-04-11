@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Church Communications — First UMC of Park Ridge</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=EB+Garamond:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --purple: #6817EB;
+      --purple-dark: #5512c4;
+      --blue: #0972EB;
+      --green: #17A637;
+      --red: #FF0E00;
+      --orange: #FF8100;
+      --ochre: #F7A800;
+      --black: #000000;
+      --white: #FFFFFF;
+      --bg: #F6F6F6;
+      --bg-mid: #E8E8E8;
+      --border: #D0D0D0;
+      --text: #000000;
+      --text-light: #555555;
+      --error: #FF0E00;
+      --success: #17A637;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: var(--purple);
+      color: white;
+      padding: 1.5rem 1rem;
+      text-align: center;
+    }
+
+    .header-inner {
+      max-width: 680px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.25rem;
+    }
+
+    .header-logo {
+      width: 72px;
+      height: 72px;
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+
+    .header-text h1 {
+      font-family: 'EB Garamond', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .header-text p {
+      font-size: 0.95rem;
+      font-weight: 300;
+      opacity: 0.9;
+      margin-top: 0.15rem;
+    }
+
+    .rainbow-bar {
+      height: 5px;
+      background: linear-gradient(to right,
+        #FF0E00 0%, #FF0E00 16.66%,
+        #FF8100 16.66%, #FF8100 33.33%,
+        #F7A800 33.33%, #F7A800 50%,
+        #17A637 50%, #17A637 66.66%,
+        #0972EB 66.66%, #0972EB 83.33%,
+        #6817EB 83.33%, #6817EB 100%
+      );
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    .intro {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      color: var(--text-light);
+      line-height: 1.65;
+    }
+
+    .intro strong { color: var(--text); }
+
+    .form-section {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .form-section h2 {
+      font-family: 'EB Garamond', serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--purple);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--blue);
+    }
+
+    .form-group { margin-bottom: 1.15rem; }
+    .form-group:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-weight: 500;
+      font-size: 0.9rem;
+      margin-bottom: 0.35rem;
+      color: var(--text);
+    }
+
+    label .required { color: var(--error); margin-left: 2px; }
+    label .hint {
+      font-weight: 400;
+      font-size: 0.8rem;
+      color: var(--text-light);
+      display: block;
+      margin-top: 0.15rem;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="url"],
+    input[type="date"],
+    input[type="time"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: white;
+      color: var(--text);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--purple);
+      box-shadow: 0 0 0 3px rgba(104, 23, 235, 0.12);
+    }
+
+    textarea { resize: vertical; min-height: 100px; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 500px) {
+      .row { grid-template-columns: 1fr; }
+      .header-inner { flex-direction: column; gap: 0.75rem; }
+      .header-logo { width: 60px; height: 60px; }
+    }
+
+    /* ─── Mode Selector Cards ─── */
+    .mode-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .mode-cards { grid-template-columns: 1fr; }
+    }
+
+    .mode-card {
+      background: var(--white);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    }
+
+    .mode-card:hover {
+      border-color: var(--purple);
+      box-shadow: 0 2px 12px rgba(104, 23, 235, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .mode-card.active {
+      border-color: var(--purple);
+      background: rgba(104, 23, 235, 0.04);
+      box-shadow: 0 2px 12px rgba(104, 23, 235, 0.15);
+    }
+
+    .mode-card .mode-icon {
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .mode-card .mode-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+
+    .mode-card .mode-desc {
+      font-size: 0.78rem;
+      color: var(--text-light);
+      line-height: 1.4;
+    }
+
+    /* ─── Buttons ─── */
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 0.85rem;
+      font-family: 'Roboto', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: white;
+      background: var(--purple);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .submit-btn:hover { background: var(--purple-dark); }
+    .submit-btn:disabled { background: #999; cursor: not-allowed; }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 1rem;
+      color: var(--purple);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .back-link:hover { text-decoration: underline; }
+
+    .status-msg {
+      text-align: center;
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 8px;
+      font-weight: 500;
+    }
+
+    .status-msg.error {
+      background: #fdecea;
+      color: var(--error);
+      border: 1px solid #f5b7b1;
+    }
+
+    .field-error {
+      color: var(--error);
+      font-size: 0.8rem;
+      margin-top: 0.25rem;
+    }
+
+    input.invalid, select.invalid, textarea.invalid {
+      border-color: var(--error);
+    }
+
+    .footer {
+      text-align: center;
+      padding: 1.5rem 1rem;
+      color: var(--text-light);
+      font-size: 0.8rem;
+    }
+
+    .footer a { color: var(--blue); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    /* ─── Success Screen ─── */
+    .success-screen {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .success-screen .checkmark {
+      font-size: 3rem;
+      color: var(--success);
+      margin-bottom: 1rem;
+    }
+
+    .success-screen h2 {
+      font-family: 'EB Garamond', serif;
+      color: var(--purple);
+      margin-bottom: 0.75rem;
+    }
+
+    .success-screen p {
+      color: var(--text-light);
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .success-screen button {
+      padding: 0.6rem 2rem;
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--purple);
+      background: white;
+      border: 2px solid var(--purple);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .success-screen button:hover {
+      background: var(--purple);
+      color: white;
+    }
+
+    /* ─── File Upload ─── */
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .upload-area:hover, .upload-area.dragover {
+      border-color: var(--purple);
+      background: rgba(104, 23, 235, 0.03);
+    }
+
+    .upload-area input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-area .upload-icon { font-size: 1.5rem; color: var(--purple); margin-bottom: 0.35rem; }
+    .upload-area .upload-text { font-size: 0.85rem; color: var(--text-light); }
+    .upload-area .upload-text strong { color: var(--purple); }
+
+    .file-list { margin-top: 0.75rem; }
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0.6rem;
+      background: var(--bg);
+      border-radius: 4px;
+      margin-bottom: 0.35rem;
+      font-size: 0.8rem;
+    }
+    .file-item .file-name { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
+    .file-item .file-size { color: var(--text-light); font-size: 0.75rem; margin-left: 0.5rem; flex-shrink: 0; }
+    .file-item .remove-btn {
+      color: var(--error); background: none; border: none;
+      cursor: pointer; font-size: 1rem; padding: 0 0.25rem; margin-left: 0.5rem; flex-shrink: 0;
+    }
+
+    /* ─── Privacy Note ─── */
+    .privacy-note {
+      background: #f0ebff;
+      border: 1px solid #d4c5f9;
+      border-radius: 6px;
+      padding: 0.85rem 1rem;
+      font-size: 0.8rem;
+      color: #4a2d8a;
+      line-height: 1.5;
+      margin-bottom: 1.15rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <img src="fumcpr_logo.jpg" alt="First UMC of Park Ridge" class="header-logo" />
+    <div class="header-text">
+      <h1>First United Methodist Church of Park Ridge</h1>
+      <p>Church Communications</p>
+    </div>
+  </div>
+</div>
+<div class="rainbow-bar"></div>
+
+<div class="container" id="app"></div>
+
+<div class="footer">
+  <p>First United Methodist Church of Park Ridge<br>
+  418 W. Touhy Ave, Park Ridge, IL 60068<br>
+  <a href="https://parkridgeumc.org">parkridgeumc.org</a></p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+
+<script type="text/babel">
+// ─── CONFIGURATION ───────────────────────────────────────────────
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxc8cuFAKAnoqSNOhlNn6qIDff_-rNjnGo_pDlZ3RET2Wcs82rFABc4h8RQOg0IGPTzBQ/exec';
+// ─────────────────────────────────────────────────────────────────
+
+const EVENT_TYPES = [
+  'Learning', 'Service', 'Social',
+  'All Ages Ministries', 'Youth Event', 'Outside Organizations',
+  'Collections / Fundraisers', 'UWFaith', 'Small Groups',
+  'Meeting', 'Spiritual Retreat', 'Other/MISC'
+];
+
+const AUDIENCE_OPTIONS = [
+  'Church members only',
+  'Church members and community',
+  'Primarily community/outreach'
+];
+
+const ATTENDANCE_OPTIONS = [
+  '2–12 people',
+  '12–25 people',
+  '25–50 people',
+  '50+ people'
+];
+
+const PRIVACY_OPTIONS = [
+  'Share name and details',
+  'Share first name only',
+  'Anonymous — share situation only'
+];
+
+const ANNOUNCEMENT_DURATION_OPTIONS = [
+  '1 week',
+  '2 weeks',
+  '3 weeks'
+];
+
+// ─── Shared Components ───────────────────────────────────────────
+
+function Field({ name, label, required, hint, type = 'text', formData, errors, handleChange, children }) {
+  return (
+    <div className="form-group">
+      <label>
+        {label}{required && <span className="required">*</span>}
+        {hint && <span className="hint">{hint}</span>}
+      </label>
+      {children || (
+        <input
+          type={type}
+          name={name}
+          value={formData[name] || ''}
+          onChange={handleChange}
+          className={errors[name] ? 'invalid' : ''}
+        />
+      )}
+      {errors[name] && <div className="field-error">{errors[name]}</div>}
+    </div>
+  );
+}
+
+function FileUpload({ files, setFiles }) {
+  const [dragover, setDragover] = React.useState(false);
+
+  const handleFiles = (newFiles) => {
+    const fileArray = Array.from(newFiles);
+    const valid = fileArray.filter(f => {
+      if (f.size > 10 * 1024 * 1024) {
+        alert(`"${f.name}" is too large (max 10 MB). Please share a link instead.`);
+        return false;
+      }
+      return true;
+    });
+    setFiles(prev => [...prev, ...valid].slice(0, 5));
+  };
+
+  const removeFile = (idx) => setFiles(prev => prev.filter((_, i) => i !== idx));
+  const fmtSize = (b) => b < 1024 ? b + ' B' : b < 1024*1024 ? (b/1024).toFixed(1)+' KB' : (b/(1024*1024)).toFixed(1)+' MB';
+
+  return (
+    <div className="form-group">
+      <label>
+        Upload Materials
+        <span className="hint">Flyers, graphics, logos, or documents (max 5 files, 10 MB each)</span>
+      </label>
+      <div className={`upload-area ${dragover ? 'dragover' : ''}`}
+           onDragOver={(e) => { e.preventDefault(); setDragover(true); }}
+           onDragLeave={() => setDragover(false)}
+           onDrop={(e) => { e.preventDefault(); setDragover(false); handleFiles(e.dataTransfer.files); }}>
+        <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.pptx,.ai,.eps,.svg"
+               onChange={(e) => handleFiles(e.target.files)} />
+        <div className="upload-icon">&#8682;</div>
+        <div className="upload-text"><strong>Click to upload</strong> or drag and drop</div>
+      </div>
+      {files.length > 0 && (
+        <div className="file-list">
+          {files.map((f, i) => (
+            <div key={i} className="file-item">
+              <span className="file-name">{f.name}</span>
+              <span className="file-size">{fmtSize(f.size)}</span>
+              <button type="button" className="remove-btn" onClick={() => removeFile(i)} title="Remove">&times;</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main App ────────────────────────────────────────────────────
+
+function App() {
+  const [mode, setMode] = React.useState(null); // 'event' | 'announcement' | 'prayer'
+  const [formData, setFormData] = React.useState({});
+  const [errors, setErrors] = React.useState({});
+  const [status, setStatus] = React.useState(null);
+  const [errorMsg, setErrorMsg] = React.useState('');
+  const [files, setFiles] = React.useState([]);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
+  };
+
+  const fileToBase64 = (file) => new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.readAsDataURL(file);
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+
+    if (GOOGLE_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+      setStatus('error');
+      setErrorMsg('Form not configured yet. See SETUP-GUIDE.md to connect to Google Sheets.');
+      return;
+    }
+
+    setStatus('submitting');
+    try {
+      const fileData = await Promise.all(
+        files.map(async (f) => ({ name: f.name, type: f.type, size: f.size, data: await fileToBase64(f) }))
+      );
+      const payload = {
+        timestamp: new Date().toISOString(),
+        submissionType: mode,
+        ...formData,
+        files: fileData
+      };
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      setStatus('success');
+    } catch (err) {
+      setStatus('error');
+      setErrorMsg('Something went wrong. Please try again or contact the church office.');
+    }
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (mode === 'event') {
+      if (!formData.eventName?.trim()) errs.eventName = 'Event name is required';
+      if (!formData.eventDate) errs.eventDate = 'Event date is required';
+      if (!formData.description?.trim()) errs.description = 'Please provide a description';
+      if (!formData.audience) errs.audience = 'Please select an audience';
+      if (!formData.attendance) errs.attendance = 'Please select expected attendance';
+      if (!formData.contactName?.trim()) errs.contactName = 'Contact name is required';
+      if (!formData.contactEmail?.trim()) errs.contactEmail = 'Contact email is required';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) errs.contactEmail = 'Please enter a valid email';
+      if (!formData.eventType) errs.eventType = 'Please select an event type';
+      if (formData.recurring === 'Yes' && !formData.recurrenceDetail?.trim()) errs.recurrenceDetail = 'Please describe how often';
+    } else if (mode === 'announcement') {
+      if (!formData.announcementTitle?.trim()) errs.announcementTitle = 'A title or subject is required';
+      if (!formData.announcementText?.trim()) errs.announcementText = 'Please provide the announcement text';
+      if (!formData.audience) errs.audience = 'Please select an audience';
+      if (!formData.duration) errs.duration = 'Please select how long to run this';
+      if (!formData.contactName?.trim()) errs.contactName = 'Contact name is required';
+      if (!formData.contactEmail?.trim()) errs.contactEmail = 'Contact email is required';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) errs.contactEmail = 'Please enter a valid email';
+    } else if (mode === 'prayer') {
+      if (!formData.prayerFor?.trim()) errs.prayerFor = 'Please tell us who this prayer is for';
+      if (!formData.prayerRequest?.trim()) errs.prayerRequest = 'Please share the prayer request';
+      if (!formData.privacyLevel) errs.privacyLevel = 'Please select a privacy preference';
+      if (!formData.contactName?.trim()) errs.contactName = 'Your name is required';
+      if (!formData.contactEmail?.trim()) errs.contactEmail = 'Your email is required';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) errs.contactEmail = 'Please enter a valid email';
+    }
+    return errs;
+  };
+
+  const resetAll = () => {
+    setMode(null);
+    setFormData({});
+    setErrors({});
+    setStatus(null);
+    setErrorMsg('');
+    setFiles([]);
+  };
+
+  // ─── Success Screen ──────────────────────────────────────────
+  if (status === 'success') {
+    const messages = {
+      event: "Thank you! The communications team will review your submission and begin promoting your event. You'll be contacted if we have any questions.",
+      announcement: "Thank you! The communications team will review your announcement and get it into the bulletin and eNews. You'll be contacted if we need anything.",
+      prayer: "Thank you for sharing this prayer request. It will be handled with care and included in our prayer communications. You'll be contacted if we have any questions."
+    };
+    const titles = {
+      event: 'Event Submitted!',
+      announcement: 'Announcement Submitted!',
+      prayer: 'Prayer Request Submitted!'
+    };
+    return (
+      <div className="success-screen">
+        <div className="checkmark">&#10003;</div>
+        <h2>{titles[mode]}</h2>
+        <p>{messages[mode]}</p>
+        <button onClick={resetAll}>Submit Another</button>
+      </div>
+    );
+  }
+
+  // ─── Mode Selector ───────────────────────────────────────────
+  if (!mode) {
+    return (
+      <div>
+        <div className="intro">
+          <strong>How can the communications team help?</strong> Choose what you need below, and we'll take it from there.
+        </div>
+        <div className="mode-cards">
+          <div className="mode-card" onClick={() => setMode('event')}>
+            <div className="mode-icon">&#128197;</div>
+            <div className="mode-title">Submit an Event</div>
+            <div className="mode-desc">Schedule and promote an upcoming event through bulletin, eNews, website, and social media.</div>
+          </div>
+          <div className="mode-card" onClick={() => setMode('announcement')}>
+            <div className="mode-icon">&#128227;</div>
+            <div className="mode-title">Post an Announcement</div>
+            <div className="mode-desc">Share news, updates, or information — no event details needed.</div>
+          </div>
+          <div className="mode-card" onClick={() => setMode('prayer')}>
+            <div className="mode-icon">&#128591;</div>
+            <div className="mode-title">Prayer Request</div>
+            <div className="mode-desc">Submit a prayer request to be included in our weekly prayer communications.</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Form Props ──────────────────────────────────────────────
+  const fp = { formData, errors, handleChange };
+
+  // ─── EVENT FORM ──────────────────────────────────────────────
+  if (mode === 'event') {
+    return (
+      <form onSubmit={handleSubmit}>
+        <span className="back-link" onClick={resetAll}>&larr; Back to options</span>
+
+        <div className="intro">
+          <strong>Submit an event for promotion.</strong> Fill out this form and the communications team will create ads for the bulletin, eNews, website, and social media. Please submit at least <strong>3 weeks before your event</strong> so we have time to promote it well.
+        </div>
+
+        <div className="form-section">
+          <h2>Event Details</h2>
+          <Field name="eventName" label="Event Name" required {...fp} />
+          <div className="row">
+            <Field name="eventDate" label="Event Date" required type="date" {...fp} />
+            <Field name="eventType" label="Event Type" required {...fp}>
+              <select name="eventType" value={formData.eventType||''} onChange={handleChange} className={errors.eventType?'invalid':''}>
+                <option value="">— Select —</option>
+                {EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </Field>
+          </div>
+          <div className="row">
+            <Field name="startTime" label="Start Time" type="time" {...fp} />
+            <Field name="endTime" label="End Time" type="time" {...fp} />
+          </div>
+          <Field name="location" label="Location" hint="Room name, address, or 'Virtual'" {...fp} />
+          <Field name="description" label="Event Description" required hint="This will be used as the basis for all promotional copy" {...fp}>
+            <textarea name="description" value={formData.description||''} onChange={handleChange}
+                      className={errors.description?'invalid':''} placeholder="Tell us what the event is about, who should come, and what to expect..." />
+          </Field>
+        </div>
+
+        <div className="form-section">
+          <h2>Audience &amp; Scope</h2>
+          <Field name="audience" label="Who is this event for?" required {...fp}>
+            <select name="audience" value={formData.audience||''} onChange={handleChange} className={errors.audience?'invalid':''}>
+              <option value="">— Select —</option>
+              {AUDIENCE_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </Field>
+          <Field name="attendance" label="Expected Attendance" required hint="Helps us decide how much promotion to plan" {...fp}>
+            <select name="attendance" value={formData.attendance||''} onChange={handleChange} className={errors.attendance?'invalid':''}>
+              <option value="">— Select —</option>
+              {ATTENDANCE_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </Field>
+          <Field name="recurring" label="Is this a recurring event?" {...fp}>
+            <select name="recurring" value={formData.recurring||''} onChange={handleChange}>
+              <option value="">— Select —</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </Field>
+          {formData.recurring === 'Yes' && (
+            <Field name="recurrenceDetail" label="How often does it repeat?" required
+                   hint="e.g., 'Monthly — First Tuesday', 'Every Wednesday', 'Quarterly'" {...fp}>
+              <input type="text" name="recurrenceDetail" value={formData.recurrenceDetail||''} onChange={handleChange}
+                     className={errors.recurrenceDetail?'invalid':''} placeholder="e.g., Monthly — First Tuesday" />
+            </Field>
+          )}
+        </div>
+
+        <div className="form-section">
+          <h2>Contact Information</h2>
+          <div className="row">
+            <Field name="contactName" label="Your Name" required {...fp} />
+            <Field name="contactEmail" label="Your Email" required type="email" {...fp} />
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h2>Additional Details</h2>
+          <Field name="cost" label="Cost to Attend" hint="Leave blank or enter 'Free' if no cost" {...fp} />
+          <Field name="registrationLink" label="Registration Link" hint="If people need to sign up online" {...fp}>
+            <input type="url" name="registrationLink" value={formData.registrationLink||''} onChange={handleChange} placeholder="https://..." />
+          </Field>
+          <FileUpload files={files} setFiles={setFiles} />
+          <Field name="materialsLink" label="Link to Materials" hint="Google Drive, Dropbox, or any link to files we should use" {...fp}>
+            <input type="url" name="materialsLink" value={formData.materialsLink||''} onChange={handleChange} placeholder="https://drive.google.com/..." />
+          </Field>
+          <Field name="notes" label="Anything Else We Should Know?" hint="Special instructions, timing details, setup needs, etc." {...fp}>
+            <textarea name="notes" value={formData.notes||''} onChange={handleChange}
+                      placeholder="Any other details that will help us promote your event..." />
+          </Field>
+          <label style={{display:'flex',alignItems:'flex-start',gap:'0.5rem',marginTop:'0.75rem',cursor:'pointer'}}>
+            <input type="checkbox" name="requestConsultation" checked={!!formData.requestConsultation} onChange={handleChange}
+                   style={{marginTop:'0.25rem'}} />
+            <span>I'd like to speak with Pastor Scott or Christine about advertising details related to my event</span>
+          </label>
+        </div>
+
+        <button type="submit" className="submit-btn" disabled={status==='submitting'}>
+          {status==='submitting' ? 'Submitting...' : 'Submit Event'}
+        </button>
+        {status==='error' && <div className="status-msg error">{errorMsg}</div>}
+      </form>
+    );
+  }
+
+  // ─── ANNOUNCEMENT FORM ───────────────────────────────────────
+  if (mode === 'announcement') {
+    return (
+      <form onSubmit={handleSubmit}>
+        <span className="back-link" onClick={resetAll}>&larr; Back to options</span>
+
+        <div className="intro">
+          <strong>Post an announcement.</strong> Use this for news, updates, or information that doesn't have a specific event date — things like office closures, welcome messages, policy updates, or general church news. We'll get it into the bulletin and eNews.
+        </div>
+
+        <div className="form-section">
+          <h2>Announcement Details</h2>
+          <Field name="announcementTitle" label="Title / Subject" required hint="A short headline for the announcement" {...fp} />
+          <Field name="announcementText" label="Announcement Text" required hint="The full text you'd like shared" {...fp}>
+            <textarea name="announcementText" value={formData.announcementText||''} onChange={handleChange}
+                      className={errors.announcementText?'invalid':''}
+                      placeholder="Write the announcement as you'd like it to appear..." />
+          </Field>
+          <Field name="audience" label="Who is this for?" required {...fp}>
+            <select name="audience" value={formData.audience||''} onChange={handleChange} className={errors.audience?'invalid':''}>
+              <option value="">— Select —</option>
+              {AUDIENCE_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </Field>
+          <Field name="duration" label="How long should this run?" required hint="How many weeks should this appear in the bulletin and eNews?" {...fp}>
+            <select name="duration" value={formData.duration||''} onChange={handleChange} className={errors.duration?'invalid':''}>
+              <option value="">— Select —</option>
+              {ANNOUNCEMENT_DURATION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </Field>
+        </div>
+
+        <div className="form-section">
+          <h2>Contact Information</h2>
+          <div className="row">
+            <Field name="contactName" label="Your Name" required {...fp} />
+            <Field name="contactEmail" label="Your Email" required type="email" {...fp} />
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h2>Additional Details</h2>
+          <FileUpload files={files} setFiles={setFiles} />
+          <Field name="materialsLink" label="Link to Materials" hint="Any supporting documents, graphics, or links" {...fp}>
+            <input type="url" name="materialsLink" value={formData.materialsLink||''} onChange={handleChange} placeholder="https://..." />
+          </Field>
+          <Field name="notes" label="Anything Else?" {...fp}>
+            <textarea name="notes" value={formData.notes||''} onChange={handleChange}
+                      placeholder="Any additional context or instructions..." />
+          </Field>
+          <label style={{display:'flex',alignItems:'flex-start',gap:'0.5rem',marginTop:'0.75rem',cursor:'pointer'}}>
+            <input type="checkbox" name="requestConsultation" checked={!!formData.requestConsultation} onChange={handleChange}
+                   style={{marginTop:'0.25rem'}} />
+            <span>I'd like to speak with Pastor Scott or Christine about distribution of this announcement</span>
+          </label>
+        </div>
+
+        <button type="submit" className="submit-btn" disabled={status==='submitting'}>
+          {status==='submitting' ? 'Submitting...' : 'Submit Announcement'}
+        </button>
+        {status==='error' && <div className="status-msg error">{errorMsg}</div>}
+      </form>
+    );
+  }
+
+  // ─── PRAYER REQUEST FORM ─────────────────────────────────────
+  if (mode === 'prayer') {
+    return (
+      <form onSubmit={handleSubmit}>
+        <span className="back-link" onClick={resetAll}>&larr; Back to options</span>
+
+        <div className="intro">
+          <strong>Submit a prayer request.</strong> Your request will be reviewed by Pastor Scott and included in our weekly prayer communications (bulletin and eNews) according to your privacy preference.
+        </div>
+
+        <div className="form-section">
+          <h2>Prayer Request</h2>
+          <div className="privacy-note">
+            Your privacy matters to us. You'll choose below how much detail to share publicly. The full request is always kept confidential with the pastoral team — only the publication version (which we'll write based on your preference) appears in print.
+          </div>
+          <Field name="prayerFor" label="Who is this prayer for?" required hint="A name, family, or situation" {...fp} />
+          <Field name="prayerRequest" label="Prayer Request Details" required hint="Share as much or as little as you'd like — this stays confidential with the pastoral team" {...fp}>
+            <textarea name="prayerRequest" value={formData.prayerRequest||''} onChange={handleChange}
+                      className={errors.prayerRequest?'invalid':''}
+                      placeholder="Please share the prayer request here..." />
+          </Field>
+          <Field name="privacyLevel" label="How would you like this shared?" required {...fp}>
+            <select name="privacyLevel" value={formData.privacyLevel||''} onChange={handleChange}
+                    className={errors.privacyLevel?'invalid':''}>
+              <option value="">— Select —</option>
+              {PRIVACY_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </Field>
+        </div>
+
+        <div className="form-section">
+          <h2>Your Information</h2>
+          <div className="row">
+            <Field name="contactName" label="Your Name" required hint="So we can follow up if needed" {...fp} />
+            <Field name="contactEmail" label="Your Email" required type="email" {...fp} />
+          </div>
+          <Field name="prayerNotes" label="Anything Else?" hint="Additional context, updates, or special instructions" {...fp}>
+            <textarea name="prayerNotes" value={formData.prayerNotes||''} onChange={handleChange}
+                      placeholder="Optional — any additional details..." />
+          </Field>
+        </div>
+
+        <button type="submit" className="submit-btn" disabled={status==='submitting'}>
+          {status==='submitting' ? 'Submitting...' : 'Submit Prayer Request'}
+        </button>
+        {status==='error' && <div className="status-msg error">{errorMsg}</div>}
+      </form>
+    );
+  }
+
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<App />);
+</script>
+
+</body>
+</html>
