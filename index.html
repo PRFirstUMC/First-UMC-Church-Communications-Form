@@ -198,15 +198,23 @@
     }
 
     /* ─── Mode Selector Cards ─── */
+    /* Flexbox + center justification so a partial row (e.g., 2 of 3) sits
+       centered under the full row above it instead of left-aligned. */
     .mode-cards {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
       gap: 0.75rem;
       margin-bottom: 1.5rem;
     }
 
+    .mode-cards > .mode-card {
+      flex: 0 1 calc((100% - 1.5rem) / 3);
+      min-width: 0;
+    }
+
     @media (max-width: 600px) {
-      .mode-cards { grid-template-columns: 1fr; }
+      .mode-cards > .mode-card { flex-basis: 100%; }
     }
 
     .mode-card {
@@ -487,6 +495,17 @@ const ANNOUNCEMENT_DURATION_OPTIONS = [
   '3 weeks'
 ];
 
+const FUNDRAISER_TYPES = [
+  'Fundraiser (raising money)',
+  'Collection Drive (collecting physical items)',
+  'Both — money and items'
+];
+
+const FUNDRAISER_REACH_OPTIONS = [
+  'Normal — our church only',
+  'Large — our church plus advertising to the surrounding community'
+];
+
 // ─── Shared Components ───────────────────────────────────────────
 
 function Field({ name, label, required, hint, type = 'text', formData, errors, handleChange, children }) {
@@ -510,14 +529,15 @@ function Field({ name, label, required, hint, type = 'text', formData, errors, h
   );
 }
 
-function FileUpload({ files, setFiles }) {
+function FileUpload({ files, setFiles, label, hint, accept }) {
   const [dragover, setDragover] = React.useState(false);
+  const MAX_BYTES = 50 * 1024 * 1024; // 50 MB per file
 
   const handleFiles = (newFiles) => {
     const fileArray = Array.from(newFiles);
     const valid = fileArray.filter(f => {
-      if (f.size > 10 * 1024 * 1024) {
-        alert(`"${f.name}" is too large (max 10 MB). Please share a link instead.`);
+      if (f.size > MAX_BYTES) {
+        alert(`"${f.name}" is too large (max 50 MB per file). Please share a link instead.`);
         return false;
       }
       return true;
@@ -528,17 +548,21 @@ function FileUpload({ files, setFiles }) {
   const removeFile = (idx) => setFiles(prev => prev.filter((_, i) => i !== idx));
   const fmtSize = (b) => b < 1024 ? b + ' B' : b < 1024*1024 ? (b/1024).toFixed(1)+' KB' : (b/(1024*1024)).toFixed(1)+' MB';
 
+  const labelText = label || 'Upload Materials';
+  const hintText = hint || 'Flyers, graphics, logos, or documents';
+  const acceptValue = accept || 'image/*,.pdf,.doc,.docx,.pptx,.ai,.eps,.svg';
+
   return (
     <div className="form-group">
       <label>
-        Upload Materials
-        <span className="hint">Flyers, graphics, logos, or documents (max 5 files, 10 MB each)</span>
+        {labelText}
+        <span className="hint">{hintText} — max 5 files, each under 50 MB</span>
       </label>
       <div className={`upload-area ${dragover ? 'dragover' : ''}`}
            onDragOver={(e) => { e.preventDefault(); setDragover(true); }}
            onDragLeave={() => setDragover(false)}
            onDrop={(e) => { e.preventDefault(); setDragover(false); handleFiles(e.dataTransfer.files); }}>
-        <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.pptx,.ai,.eps,.svg"
+        <input type="file" multiple accept={acceptValue}
                onChange={(e) => handleFiles(e.target.files)} />
         <div className="upload-icon">&#8682;</div>
         <div className="upload-text"><strong>Click to upload</strong> or drag and drop</div>
@@ -561,7 +585,7 @@ function FileUpload({ files, setFiles }) {
 // ─── Main App ────────────────────────────────────────────────────
 
 function App() {
-  const [mode, setMode] = React.useState(null); // 'event' | 'announcement' | 'prayer'
+  const [mode, setMode] = React.useState(null); // 'event' | 'announcement' | 'prayer' | 'fundraiser' | 'recap'
   const [formData, setFormData] = React.useState({});
   const [errors, setErrors] = React.useState({});
   const [status, setStatus] = React.useState(null);
@@ -642,6 +666,34 @@ function App() {
       if (!formData.contactName?.trim()) errs.contactName = 'Your name is required';
       if (!formData.contactEmail?.trim()) errs.contactEmail = 'Your email is required';
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) errs.contactEmail = 'Please enter a valid email';
+    } else if (mode === 'fundraiser') {
+      if (!formData.fundraiserName?.trim()) errs.fundraiserName = 'Name is required';
+      if (!formData.fundraiserType) errs.fundraiserType = 'Please select a type';
+      if (!formData.cause?.trim()) errs.cause = 'Please tell us who or what this benefits';
+      if (!formData.description?.trim()) errs.description = 'Please describe the fundraiser';
+      if (!formData.startDate) errs.startDate = 'Start date is required';
+      if (!formData.endDate) errs.endDate = 'End date is required';
+      if (formData.startDate && formData.endDate && formData.endDate < formData.startDate) {
+        errs.endDate = 'End date must be on or after start date';
+      }
+      if (!formData.whatToDonate?.trim()) errs.whatToDonate = 'Please describe what people can give';
+      if (!formData.howToDonate?.trim()) errs.howToDonate = 'Please describe how people can give';
+      if (!formData.reach) errs.reach = 'Please select an expected reach';
+      if (!formData.hasEvent) errs.hasEvent = 'Please indicate whether there is a culminating event';
+      if (formData.hasEvent === 'Yes') {
+        if (!formData.eventName?.trim()) errs.eventName = 'Event name is required';
+        if (!formData.eventDate) errs.eventDate = 'Event date is required';
+        if (!formData.location?.trim()) errs.location = 'Location is required';
+      }
+      if (!formData.contactName?.trim()) errs.contactName = 'Your name is required';
+      if (!formData.contactEmail?.trim()) errs.contactEmail = 'Your email is required';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) errs.contactEmail = 'Please enter a valid email';
+    } else if (mode === 'recap') {
+      if (!formData.eventName?.trim()) errs.eventName = 'Event name is required';
+      if (!formData.reflection?.trim()) errs.reflection = 'Please share a reflection on what happened';
+      if (!formData.contactName?.trim()) errs.contactName = 'Your name is required';
+      if (!formData.contactEmail?.trim()) errs.contactEmail = 'Your email is required';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) errs.contactEmail = 'Please enter a valid email';
     }
     return errs;
   };
@@ -660,12 +712,16 @@ function App() {
     const messages = {
       event: "Thank you! The communications team will review your submission and begin promoting your event. You'll be contacted if we have any questions.",
       announcement: "Thank you! The communications team will review your announcement and get it into the bulletin and eNews. You'll be contacted if we need anything.",
-      prayer: "Thank you for trusting us with this. Please know that Pastor Scott and our prayer community will be holding you and those you've named in prayer. If you asked for a personal follow-up, Scott will reach out soon. Peace be with you."
+      prayer: "Thank you for trusting us with this. Please know that Pastor Scott and our prayer community will be holding you and those you've named in prayer. If you asked for a personal follow-up, Scott will reach out soon. Peace be with you.",
+      fundraiser: "Thank you! The communications team will start building promotional materials for your fundraiser. If you indicated a culminating event, we'll set that up alongside the campaign. You'll be contacted if we have any questions.",
+      recap: "Thank you for sharing this! Our communications team will review the photos and your reflection, and decide where they'll appear — likely some combination of social media, the eNews, or the website. We'll be in touch if we have any questions."
     };
     const titles = {
       event: 'Event Submitted!',
       announcement: 'Announcement Submitted!',
-      prayer: 'Prayer Request Submitted!'
+      prayer: 'Prayer Request Submitted!',
+      fundraiser: 'Fundraiser Submitted!',
+      recap: 'Photos Submitted!'
     };
     return (
       <div className="success-screen">
@@ -694,6 +750,16 @@ function App() {
             <div className="mode-icon">&#128227;</div>
             <div className="mode-title">Post an Announcement</div>
             <div className="mode-desc">Share news, updates, or information — no event details needed.</div>
+          </div>
+          <div className="mode-card" onClick={() => setMode('fundraiser')}>
+            <div className="mode-icon">&#127873;</div>
+            <div className="mode-title">Submit a Fundraiser or Collection</div>
+            <div className="mode-desc">Promote a fundraising campaign or collection drive — with or without a culminating event.</div>
+          </div>
+          <div className="mode-card" onClick={() => setMode('recap')}>
+            <div className="mode-icon">&#128247;</div>
+            <div className="mode-title">Share Photos from an Event</div>
+            <div className="mode-desc">Send us photos and a brief reflection on something that just happened. We'll decide where to share them — social media, eNews, or the website.</div>
           </div>
           <div className="mode-card" onClick={() => setMode('prayer')}>
             <div className="mode-icon">&#128591;</div>
@@ -796,7 +862,7 @@ function App() {
           <label style={{display:'flex',alignItems:'flex-start',gap:'0.5rem',marginTop:'0.75rem',cursor:'pointer'}}>
             <input type="checkbox" name="requestConsultation" checked={!!formData.requestConsultation} onChange={handleChange}
                    style={{marginTop:'0.25rem'}} />
-            <span>I'd like to speak with Pastor Scott or Christine about advertising details related to my event</span>
+            <span>I'd like to speak with Pastor Scott or Christine Fanning about advertising details related to my event</span>
           </label>
         </div>
 
@@ -861,12 +927,144 @@ function App() {
           <label style={{display:'flex',alignItems:'flex-start',gap:'0.5rem',marginTop:'0.75rem',cursor:'pointer'}}>
             <input type="checkbox" name="requestConsultation" checked={!!formData.requestConsultation} onChange={handleChange}
                    style={{marginTop:'0.25rem'}} />
-            <span>I'd like to speak with Pastor Scott or Christine about distribution of this announcement</span>
+            <span>I'd like to speak with Pastor Scott or Christine Fanning about distribution of this announcement</span>
           </label>
         </div>
 
         <button type="submit" className="submit-btn" disabled={status==='submitting'}>
           {status==='submitting' ? 'Submitting...' : 'Submit Announcement'}
+        </button>
+        {status==='error' && <div className="status-msg error">{errorMsg}</div>}
+      </form>
+    );
+  }
+
+  // ─── FUNDRAISER / COLLECTION FORM ────────────────────────────
+  if (mode === 'fundraiser') {
+    return (
+      <form onSubmit={handleSubmit}>
+        <span className="back-link" onClick={resetAll}>&larr; Back to options</span>
+
+        <div className="intro">
+          <strong>Submit a fundraiser or collection drive.</strong> Use this for campaigns that run over a period of time — annual offerings, food drives, mission trip fundraisers, school-supply collections, and so on. Some fundraisers conclude with a special event (e.g. delivering Christmas gifts for Kids Above All at their distribution center) — there's a section below to capture those details too. Please submit at least <strong>3 weeks before the campaign starts</strong>.
+        </div>
+
+        <div className="form-section">
+          <h2>About the Fundraiser or Collection</h2>
+          <Field name="fundraiserName" label="Fundraiser / Collection Name" required hint="e.g., 'Mothers for Mission 2026', 'Pill Bottle Collection', 'Youth Brunch & Serve'" {...fp} />
+          <Field name="fundraiserType" label="Type" required {...fp}>
+            <select name="fundraiserType" value={formData.fundraiserType||''} onChange={handleChange} className={errors.fundraiserType?'invalid':''}>
+              <option value="">— Select —</option>
+              {FUNDRAISER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </Field>
+          <Field name="cause" label="Who or what does this benefit?" required hint="The recipient organization, mission, ministry, or beneficiary" {...fp}>
+            <textarea name="cause" value={formData.cause||''} onChange={handleChange}
+                      className={errors.cause?'invalid':''}
+                      placeholder="e.g., NIJFON (Northern Illinois Justice for Our Neighbors), the Youth Summer Mission Trip to Duluth, Matthew 25 Ministries pill-bottle program..." />
+          </Field>
+          <Field name="goal" label="Goal" hint="Optional but encouraging — a dollar target, item count, or other measurable goal" {...fp}>
+            <input type="text" name="goal" value={formData.goal||''} onChange={handleChange}
+                   placeholder="e.g., $5,000 / 200 lbs of food / 100 envelopes filled" />
+          </Field>
+          <Field name="description" label="Campaign Description" required hint="This will be the basis of all promo copy — explain the cause, why it matters, and the impact" {...fp}>
+            <textarea name="description" value={formData.description||''} onChange={handleChange}
+                      className={errors.description?'invalid':''}
+                      placeholder="Tell us the story behind this fundraiser, who benefits, and why people should give..." />
+          </Field>
+        </div>
+
+        <div className="form-section">
+          <h2>Campaign Run Period</h2>
+          <div className="row">
+            <Field name="startDate" label="Start Date" required type="date" {...fp} />
+            <Field name="endDate" label="End Date" required type="date" {...fp} />
+          </div>
+          <Field name="whatToDonate" label="What can people give?" required hint="Be specific so people know what's needed" {...fp}>
+            <textarea name="whatToDonate" value={formData.whatToDonate||''} onChange={handleChange}
+                      className={errors.whatToDonate?'invalid':''}
+                      placeholder="e.g., 'non-perishable food items: peanut butter, canned vegetables, pasta, cereal' / 'monetary donations of any size' / 'clean prescription pill bottles, labels removed'" />
+          </Field>
+          <Field name="howToDonate" label="How can people give?" required hint="Drop-off location, online link, payment method, deadline reminders, etc." {...fp}>
+            <textarea name="howToDonate" value={formData.howToDonate||''} onChange={handleChange}
+                      className={errors.howToDonate?'invalid':''}
+                      placeholder="e.g., 'Drop items in baskets at the Grant Place entrance' / 'Online via our website donation page' / 'Place envelopes in the basket in the Parlor' / 'Make checks payable to First UMC, memo: Mothers for Mission'" />
+          </Field>
+        </div>
+
+        <div className="form-section">
+          <h2>Promotion</h2>
+          <Field name="reach" label="How big is this campaign?" required hint="Helps us decide how much promotion to plan" {...fp}>
+            <select name="reach" value={formData.reach||''} onChange={handleChange} className={errors.reach?'invalid':''}>
+              <option value="">— Select —</option>
+              {FUNDRAISER_REACH_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </Field>
+        </div>
+
+        <div className="form-section">
+          <h2>Culminating Special Event</h2>
+          <Field name="hasEvent" label="Does this fundraiser conclude with a special event?" required hint="e.g., a Mother's Day honor service, a celebration luncheon, an awards ceremony, the actual carwash day" {...fp}>
+            <select name="hasEvent" value={formData.hasEvent||''} onChange={handleChange} className={errors.hasEvent?'invalid':''}>
+              <option value="">— Select —</option>
+              <option value="No">No — campaign only, no closing event</option>
+              <option value="Yes">Yes — there's a special event tied to this fundraiser</option>
+            </select>
+          </Field>
+          {formData.hasEvent === 'Yes' && (
+            <div style={{borderLeft:'3px solid var(--purple)', paddingLeft:'1rem', marginTop:'0.5rem'}}>
+              <Field name="eventName" label="Event Name" required hint="What's the closing event called?" {...fp}>
+                <input type="text" name="eventName" value={formData.eventName||''} onChange={handleChange}
+                       className={errors.eventName?'invalid':''}
+                       placeholder="e.g., 'Mother's Day Honor Service', 'Carwash Day', 'Mission Trip Send-off Brunch'" />
+              </Field>
+              <div className="row">
+                <Field name="eventDate" label="Event Date" required type="date" {...fp} />
+                <Field name="location" label="Location" required hint="Where will the event happen?" {...fp}>
+                  <input type="text" name="location" value={formData.location||''} onChange={handleChange}
+                         className={errors.location?'invalid':''}
+                         placeholder="e.g., Sanctuary, Jorgeson Hall, First UMC Parking Lot" />
+                </Field>
+              </div>
+              <div className="row">
+                <Field name="startTime" label="Start Time" type="time" {...fp} />
+                <Field name="endTime" label="End Time" type="time" {...fp} />
+              </div>
+              <Field name="cost" label="Cost to Attend" hint="Leave blank or enter 'Free' if no cost" {...fp} />
+              <Field name="registrationLink" label="Registration Link" hint="If people need to sign up online" {...fp}>
+                <input type="url" name="registrationLink" value={formData.registrationLink||''} onChange={handleChange} placeholder="https://..." />
+              </Field>
+            </div>
+          )}
+        </div>
+
+        <div className="form-section">
+          <h2>Contact Information</h2>
+          <div className="row">
+            <Field name="contactName" label="Your Name" required {...fp} />
+            <Field name="contactEmail" label="Your Email" required type="email" {...fp} />
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h2>Additional Details</h2>
+          <FileUpload files={files} setFiles={setFiles} />
+          <Field name="materialsLink" label="Link to Materials" hint="Google Drive, Dropbox, or any link to flyers, photos, or supporting docs" {...fp}>
+            <input type="url" name="materialsLink" value={formData.materialsLink||''} onChange={handleChange} placeholder="https://drive.google.com/..." />
+          </Field>
+          <Field name="notes" label="Anything Else We Should Know?" hint="Special instructions, partner organizations to credit, deadlines, sensitivities, etc." {...fp}>
+            <textarea name="notes" value={formData.notes||''} onChange={handleChange}
+                      placeholder="Any other details that will help us promote this well..." />
+          </Field>
+          <label style={{display:'flex',alignItems:'flex-start',gap:'0.5rem',marginTop:'0.75rem',cursor:'pointer'}}>
+            <input type="checkbox" name="requestConsultation" checked={!!formData.requestConsultation} onChange={handleChange}
+                   style={{marginTop:'0.25rem'}} />
+            <span>I'd like to speak with Pastor Scott or Christine Fanning about how to promote this fundraiser</span>
+          </label>
+        </div>
+
+        <button type="submit" className="submit-btn" disabled={status==='submitting'}>
+          {status==='submitting' ? 'Submitting...' : 'Submit Fundraiser'}
         </button>
         {status==='error' && <div className="status-msg error">{errorMsg}</div>}
       </form>
@@ -928,6 +1126,61 @@ function App() {
 
         <button type="submit" className="submit-btn" disabled={status==='submitting'}>
           {status==='submitting' ? 'Submitting...' : 'Submit Prayer Request'}
+        </button>
+        {status==='error' && <div className="status-msg error">{errorMsg}</div>}
+      </form>
+    );
+  }
+
+  // ─── EVENT RECAP FORM ────────────────────────────────────────
+  if (mode === 'recap') {
+    return (
+      <form onSubmit={handleSubmit}>
+        <span className="back-link" onClick={resetAll}>&larr; Back to options</span>
+
+        <div className="intro">
+          Submit photos or a video from a church event you attended, along with a brief reflection on what happened.
+        </div>
+
+        <div className="form-section">
+          <h2>What Happened</h2>
+          <Field name="eventName" label="Event Name or Title" required hint="What event are these photos from? (e.g., 'Sunday Night Supper, April 27' or 'Confirmation Sunday')" {...fp} />
+          <Field name="eventDate" label="When Did It Happen?" type="date" hint="Optional — helps us file the photos correctly" {...fp} />
+          <Field name="reflection" label="A Reflection on What Happened" required hint="A few sentences, a paragraph, or a few paragraphs — whatever feels right. Tell us what stood out, who was there, what was meaningful." {...fp}>
+            <textarea name="reflection" value={formData.reflection||''} onChange={handleChange}
+                      className={errors.reflection?'invalid':''}
+                      placeholder="What happened? What stood out? What would you want others to know?" />
+          </Field>
+        </div>
+
+        <div className="form-section">
+          <h2>Photos</h2>
+          <FileUpload
+            files={files}
+            setFiles={setFiles}
+            label="Upload Photos"
+            hint="JPG, PNG, HEIC, or GIF — landscape and close-ups are both welcome"
+            accept="image/*"
+          />
+          <Field name="materialsLink" label="Link to Additional Media" hint="Got videos or more photos than fit here? Paste a Google Drive, Dropbox, or iCloud link" {...fp}>
+            <input type="url" name="materialsLink" value={formData.materialsLink||''} onChange={handleChange} placeholder="https://drive.google.com/..." />
+          </Field>
+        </div>
+
+        <div className="form-section">
+          <h2>Your Information</h2>
+          <div className="row">
+            <Field name="contactName" label="Your Name" required {...fp} />
+            <Field name="contactEmail" label="Your Email" required type="email" hint="We'll send you a confirmation that we received this" {...fp} />
+          </div>
+          <Field name="notes" label="Anything Else We Should Know?" hint="Names of people in photos who might want a heads-up, things to call out or avoid, etc." {...fp}>
+            <textarea name="notes" value={formData.notes||''} onChange={handleChange}
+                      placeholder="Optional — any additional context..." />
+          </Field>
+        </div>
+
+        <button type="submit" className="submit-btn" disabled={status==='submitting'}>
+          {status==='submitting' ? 'Submitting...' : 'Share Photos'}
         </button>
         {status==='error' && <div className="status-msg error">{errorMsg}</div>}
       </form>
