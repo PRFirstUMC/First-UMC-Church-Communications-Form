@@ -714,7 +714,7 @@ function App() {
       announcement: "Thank you! The communications team will review your announcement and get it into the bulletin and eNews. You'll be contacted if we need anything.",
       prayer: "Thank you for trusting us with this. Please know that Pastor Scott and our prayer community will be holding you and those you've named in prayer. If you asked for a personal follow-up, Scott will reach out soon. Peace be with you.",
       fundraiser: "Thank you! The communications team will start building promotional materials for your fundraiser. If you indicated a culminating event, we'll set that up alongside the campaign. You'll be contacted if we have any questions.",
-      recap: "Thank you for sharing this! Our communications team will review the photos and your reflection, and decide where they'll appear — likely some combination of social media, the eNews, or the website. We'll be in touch if we have any questions."
+      recap: "Thank you for sharing this! Our communications team will review the photos and your reflection, and decide where they'll appear — likely the eNews or the website. We'll be in touch if we have any questions."
     };
     const titles = {
       event: 'Event Submitted!',
@@ -744,7 +744,7 @@ function App() {
           <div className="mode-card" onClick={() => setMode('event')}>
             <div className="mode-icon">&#128197;</div>
             <div className="mode-title">Submit an Event</div>
-            <div className="mode-desc">Schedule and promote an upcoming event through bulletin, eNews, website, and social media.</div>
+            <div className="mode-desc">Schedule and promote an upcoming event through bulletin, eNews, and website.</div>
           </div>
           <div className="mode-card" onClick={() => setMode('announcement')}>
             <div className="mode-icon">&#128227;</div>
@@ -759,7 +759,7 @@ function App() {
           <div className="mode-card" onClick={() => setMode('recap')}>
             <div className="mode-icon">&#128247;</div>
             <div className="mode-title">Share Photos from an Event</div>
-            <div className="mode-desc">Send us photos and a brief reflection on something that just happened. We'll decide where to share them — social media, eNews, or the website.</div>
+            <div className="mode-desc">Send us photos and a brief reflection on something that just happened. We'll decide where to share them — eNews or the website.</div>
           </div>
           <div className="mode-card" onClick={() => setMode('prayer')}>
             <div className="mode-icon">&#128591;</div>
@@ -781,7 +781,7 @@ function App() {
         <span className="back-link" onClick={resetAll}>&larr; Back to options</span>
 
         <div className="intro">
-          <strong>Submit an event for promotion.</strong> Fill out this form and the communications team will create ads for the bulletin, eNews, website, and social media. Please submit at least <strong>3 weeks before your event</strong> so we have time to promote it well.
+          <strong>Submit an event for promotion.</strong> Fill out this form and the communications team will create ads for the bulletin, eNews, and website. <strong>Lead time matters.</strong> Please submit at least <strong>3 weeks before</strong> your event for smaller, member-focused events, and at least <strong>6 weeks before</strong> for larger, community-facing events that need wider promotion (e.g., 50+ expected attendees, major drives, signature events). The more lead time, the more we can do to promote it well.
         </div>
 
         <div className="form-section">
@@ -946,7 +946,7 @@ function App() {
         <span className="back-link" onClick={resetAll}>&larr; Back to options</span>
 
         <div className="intro">
-          <strong>Submit a fundraiser or collection drive.</strong> Use this for campaigns that run over a period of time — annual offerings, food drives, mission trip fundraisers, school-supply collections, and so on. Some fundraisers conclude with a special event (e.g. delivering Christmas gifts for Kids Above All at their distribution center) — there's a section below to capture those details too. Please submit at least <strong>3 weeks before the campaign starts</strong>.
+          <strong>Submit a fundraiser or collection drive.</strong> Use this for campaigns that run over a period of time — annual offerings, food drives, mission trip fundraisers, school-supply collections, and so on. Some fundraisers conclude with a special event (e.g. delivering Christmas gifts for Kids Above All at their distribution center) — there's a section below to capture those details too. <strong>Lead time matters.</strong> Please submit at least <strong>3 weeks before the campaign starts</strong> for smaller drives, and at least <strong>6 weeks before</strong> for larger, community-facing campaigns (e.g., annual appeals, signature drives). The more lead time, the more we can do to promote it well.
         </div>
 
         <div className="form-section">
