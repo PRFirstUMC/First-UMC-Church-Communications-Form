@@ -592,6 +592,16 @@ function App() {
   const [errorMsg, setErrorMsg] = React.useState('');
   const [files, setFiles] = React.useState([]);
 
+  // Deep-link support: a "mode" query param or hash (e.g. ?mode=prayer or
+  // #prayer) jumps straight to that page on load, skipping the chooser.
+  // Used by the weekly worship livestream email's Prayer Request button.
+  React.useEffect(() => {
+    const valid = ['event', 'announcement', 'prayer', 'fundraiser', 'recap'];
+    const params = new URLSearchParams(window.location.search);
+    const requested = (params.get('mode') || window.location.hash.replace('#', '')).toLowerCase();
+    if (valid.includes(requested)) setMode(requested);
+  }, []);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
