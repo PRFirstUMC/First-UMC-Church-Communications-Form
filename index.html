@@ -614,6 +614,17 @@ function App() {
     reader.readAsDataURL(file);
   });
 
+  // <input type="time"> values are always 24-hour ("19:00"), which read as
+  // military time on the submissions sheet and in notification emails
+  // (Scott, 2026-06-03). Convert to friendly 12-hour am/pm at submit time.
+  const to12h = (t) => {
+    if (!t || !/^\d{1,2}:\d{2}$/.test(t)) return t || '';
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h >= 12 ? 'pm' : 'am';
+    const h12 = h % 12 || 12;
+    return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
@@ -634,6 +645,8 @@ function App() {
         timestamp: new Date().toISOString(),
         submissionType: mode,
         ...formData,
+        ...(formData.startTime ? { startTime: to12h(formData.startTime) } : {}),
+        ...(formData.endTime ? { endTime: to12h(formData.endTime) } : {}),
         files: fileData
       };
       await fetch(GOOGLE_SCRIPT_URL, {
