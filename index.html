@@ -537,7 +537,7 @@ function Field({ name, label, required, hint, type = 'text', formData, errors, h
   );
 }
 
-function FileUpload({ files, setFiles, label, hint, accept }) {
+function FileUpload({ files, setFiles, label, hint, accept, photosOnly }) {
   const [dragover, setDragover] = React.useState(false);
   const [preparing, setPreparing] = React.useState(false);
   const MAX_FILES = 15;
@@ -623,7 +623,12 @@ function FileUpload({ files, setFiles, label, hint, accept }) {
     <div className="form-group">
       <label>
         {labelText}
-        <span className="hint">{hintText} — up to {MAX_FILES} files, 35 MB total. Large photos are resized automatically.</span>
+        <span className="hint">
+          {hintText} — up to {MAX_FILES} {photosOnly ? 'photos' : 'files'} at a time.
+          {photosOnly
+            ? ' Send them straight off your phone or camera at full size; we shrink them for you, so you do not need to resize anything or worry about how large they are.'
+            : ' All the files together need to stay under 35 MB.'}
+        </span>
       </label>
       <div className={`upload-area ${dragover ? 'dragover' : ''}`}
            onDragOver={(e) => { e.preventDefault(); setDragover(true); }}
@@ -644,7 +649,10 @@ function FileUpload({ files, setFiles, label, hint, accept }) {
               <button type="button" className="remove-btn" onClick={() => removeFile(i)} title="Remove">&times;</button>
             </div>
           ))}
-          <div className="file-total">{files.length} of {MAX_FILES} files &middot; {fmtSize(totalBytes)} of 35 MB</div>
+          <div className="file-total">
+            {files.length} of {MAX_FILES} {photosOnly ? 'photos' : 'files'}
+            {photosOnly ? '' : ' · ' + fmtSize(totalBytes) + ' of 35 MB'}
+          </div>
         </div>
       )}
     </div>
@@ -680,7 +688,10 @@ function VideoUpload({ video, setVideo, photoBytes }) {
     <div className="form-group">
       <label>
         Upload a Short Video
-        <span className="hint">One video at a time, 30 MB maximum &mdash; that is roughly 20 seconds of phone video</span>
+        <span className="hint">
+          One video at a time, and it has to be under <strong>30 MB</strong> &mdash; only about
+          20 seconds of phone video. Longer than that, use the Video Link field below instead.
+        </span>
       </label>
       <div className="upload-area">
         <input type="file" accept="video/*"
@@ -698,10 +709,14 @@ function VideoUpload({ video, setVideo, photoBytes }) {
         </div>
       )}
       <div className="upload-note">
-        <strong>Most videos are too big to upload.</strong> A minute of phone video is 65 MB or more, and 4K is
-        several hundred. If your video will not go through above, send it as a link instead: upload it to
-        Google Photos, Google Drive, Dropbox, or iCloud, then paste the share link in the <strong>Video Link</strong>{' '}
-        field below. Please send one video per submission either way.
+        <strong>Most videos are too big to upload here, and that is expected.</strong> One minute of ordinary phone
+        video runs 65 MB or more, and 4K video runs several hundred &mdash; so anything past a very short clip
+        will not fit. That is a limit of what a web form can carry, not something you did wrong.
+        <br/><br/>
+        <strong>For any video longer than about 20 seconds, send a link instead.</strong> Upload it to Google Photos,
+        Google Drive, Dropbox, or iCloud, then paste the share link in the <strong>Video Link</strong> field below.
+        A link works for a video of any length, so when in doubt, use the link. Either way, please send one video
+        per submission.
       </div>
     </div>
   );
@@ -1337,6 +1352,7 @@ function App() {
             label="Upload Photos"
             hint="JPG, PNG, HEIC, or GIF — landscape and close-ups are both welcome"
             accept="image/*"
+            photosOnly
           />
         </div>
 
