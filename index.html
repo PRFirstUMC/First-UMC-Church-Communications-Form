@@ -413,6 +413,22 @@
     .file-total {
       color: var(--text-light); font-size: 0.75rem; text-align: right; padding: 0.15rem 0.6rem 0;
     }
+    .dropbox-btn {
+      display: block;
+      width: 100%;
+      padding: 0.85rem;
+      background: var(--blue);
+      color: white;
+      font-family: 'Roboto', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+    .dropbox-btn:hover { background: #071fbe; }
+
     .upload-note {
       margin-top: 0.6rem; padding: 0.6rem 0.75rem;
       background: var(--bg); border-left: 3px solid var(--purple);
@@ -659,8 +675,11 @@ function FileUpload({ files, setFiles, label, hint, accept, photosOnly }) {
   );
 }
 
-// One short video, sent the same way the photos are. Anything longer than a few
-// seconds has to travel as a link — see the note this renders.
+// Three routes for video, because a web form can only carry a few seconds of it.
+// The Dropbox file request is the one that actually works for real footage: it
+// takes up to 1 GB, needs no Dropbox account, and drops straight into our folder.
+const DROPBOX_REQUEST_URL = 'https://www.dropbox.com/request/wk1lm6b6xi333ycfiprx';
+
 function VideoUpload({ video, setVideo, photoBytes }) {
   const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
   const BUDGET_BYTES = 35 * 1024 * 1024;
@@ -671,54 +690,64 @@ function VideoUpload({ video, setVideo, photoBytes }) {
     if (!f) return;
     if (f.size > MAX_VIDEO_BYTES) {
       alert(`"${f.name}" is ${fmtSize(f.size)} — too large to upload here (30 MB maximum).\n\n` +
-        'Please paste a link to it in the "Video Link" field instead. Upload it to Google Photos, ' +
-        'Google Drive, Dropbox, or iCloud, then copy the share link.');
+        'Use the "Upload a video to our Dropbox" button above instead. It takes videos up to 1 GB and ' +
+        'does not require a Dropbox account.');
       return;
     }
     if (photoBytes + f.size > BUDGET_BYTES) {
       alert(`"${f.name}" (${fmtSize(f.size)}) plus your photos (${fmtSize(photoBytes)}) is over the ` +
-        '35 MB this form can carry in one submission.\n\nEither remove some photos, or send the video ' +
-        'as a link in the "Video Link" field.');
+        '35 MB this form can carry in one submission.\n\nSend the video through the Dropbox button above ' +
+        'instead — that keeps it separate from your photos and has no practical size limit.');
       return;
     }
     setVideo(f);
   };
 
   return (
-    <div className="form-group">
-      <label>
-        Upload a Short Video
-        <span className="hint">
-          One video at a time, and it has to be under <strong>30 MB</strong> &mdash; only about
-          20 seconds of phone video. Longer than that, use the Video Link field below instead.
-        </span>
-      </label>
-      <div className="upload-area">
-        <input type="file" accept="video/*"
-               onChange={(e) => { handleVideo(e.target.files); e.target.value = ''; }} />
-        <div className="upload-icon">&#8682;</div>
-        <div className="upload-text"><strong>Click to choose one video</strong></div>
-      </div>
-      {video && (
-        <div className="file-list">
-          <div className="file-item">
-            <span className="file-name">{video.name}</span>
-            <span className="file-size">{fmtSize(video.size)}</span>
-            <button type="button" className="remove-btn" onClick={() => setVideo(null)} title="Remove">&times;</button>
-          </div>
+    <React.Fragment>
+      <div className="form-group">
+        <label>
+          Send Us a Video
+          <span className="hint">
+            Any video longer than a few seconds &mdash; this is the way to send it. No Dropbox account needed.
+          </span>
+        </label>
+        <a className="dropbox-btn" href={DROPBOX_REQUEST_URL} target="_blank" rel="noopener noreferrer">
+          Upload a video to our Dropbox &rarr;
+        </a>
+        <div className="upload-note">
+          This opens our Dropbox upload page in a new tab. Choose your video, add your name, and it comes
+          straight to us. <strong>Please keep videos under 1 GB, and send one video at a time.</strong>
+          <br/><br/>
+          Finish this form as well, so we have your reflection and the event name to go with the video.
         </div>
-      )}
-      <div className="upload-note">
-        <strong>Most videos are too big to upload here, and that is expected.</strong> One minute of ordinary phone
-        video runs 65 MB or more, and 4K video runs several hundred &mdash; so anything past a very short clip
-        will not fit. That is a limit of what a web form can carry, not something you did wrong.
-        <br/><br/>
-        <strong>For any video longer than about 20 seconds, send a link instead.</strong> Upload it to Google Photos,
-        Google Drive, Dropbox, or iCloud, then paste the share link in the <strong>Video Link</strong> field below.
-        A link works for a video of any length, so when in doubt, use the link. Either way, please send one video
-        per submission.
       </div>
-    </div>
+
+      <div className="form-group">
+        <label>
+          Or Upload a Very Short Clip Here
+          <span className="hint">
+            Only for something under <strong>30 MB</strong> &mdash; about 20 seconds of phone video. One at a time.
+            Anything longer will not fit; use the Dropbox button above.
+          </span>
+        </label>
+        <div className="upload-area">
+          <input type="file" accept="video/*"
+                 onChange={(e) => { handleVideo(e.target.files); e.target.value = ''; }} />
+          <div className="upload-icon">&#8682;</div>
+          <div className="upload-text"><strong>Click to choose one video</strong></div>
+        </div>
+        {video && (
+          <div className="file-list">
+            <div className="file-item">
+              <span className="file-name">{video.name}</span>
+              <span className="file-size">{fmtSize(video.size)}</span>
+              <button type="button" className="remove-btn" onClick={() => setVideo(null)} title="Remove">&times;</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </React.Fragment>
   );
 }
 
@@ -1327,8 +1356,8 @@ function App() {
         <span className="back-link" onClick={resetAll}>&larr; Back to options</span>
 
         <div className="intro">
-          Submit photos or a short video from a church event you attended, along with a brief reflection on what happened.
-          Photos upload right here; most videos are too large to upload, so there is a place below to paste a link to one instead.
+          Submit photos or a video from a church event you attended, along with a brief reflection on what happened.
+          Photos upload right here. Video goes through our Dropbox upload page, linked below &mdash; no Dropbox account needed.
           <br/><br/>
           <strong>Adding a link to any text field:</strong> put the URL in parentheses right after the text you want to make clickable — for example, <strong>Sign up here (https://signup.example.com)</strong>.
         </div>
@@ -1359,7 +1388,7 @@ function App() {
         <div className="form-section">
           <h2>Video</h2>
           <VideoUpload video={video} setVideo={setVideo} photoBytes={files.reduce((sum, f) => sum + f.size, 0)} />
-          <Field name="materialsLink" label="Video Link" hint="The reliable way to send video, and the place for extra photos too — a Google Photos, Google Drive, Dropbox, or iCloud share link" {...fp}>
+          <Field name="materialsLink" label="Or Paste a Link Instead" hint="Already have the video somewhere? A Google Photos, Google Drive, Dropbox, or iCloud share link works fine — and this is also the place for extra photos that did not fit above" {...fp}>
             <input type="url" name="materialsLink" value={formData.materialsLink||''} onChange={handleChange} placeholder="https://photos.app.goo.gl/..." />
           </Field>
         </div>
