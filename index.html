@@ -410,6 +410,14 @@
       color: var(--error); background: none; border: none;
       cursor: pointer; font-size: 1rem; padding: 0 0.25rem; margin-left: 0.5rem; flex-shrink: 0;
     }
+    .file-total {
+      color: var(--text-light); font-size: 0.75rem; text-align: right; padding: 0.15rem 0.6rem 0;
+    }
+    .upload-note {
+      margin-top: 0.6rem; padding: 0.6rem 0.75rem;
+      background: var(--bg); border-left: 3px solid var(--purple);
+      color: var(--text); font-size: 0.85rem; line-height: 1.5;
+    }
 
     /* ─── Privacy Note ─── */
     .privacy-note {
@@ -531,22 +539,81 @@ function Field({ name, label, required, hint, type = 'text', formData, errors, h
 
 function FileUpload({ files, setFiles, label, hint, accept }) {
   const [dragover, setDragover] = React.useState(false);
-  const MAX_BYTES = 50 * 1024 * 1024; // 50 MB per file
+  const [preparing, setPreparing] = React.useState(false);
+  const MAX_FILES = 15;
+  const MAX_BYTES = 35 * 1024 * 1024;       // 35 MB per file
+  // Everything is base64-encoded into ONE POST to Apps Script, which caps near
+  // 50 MB — and base64 inflates bytes ~33%. Keep the raw total under 35 MB so a
+  // submission can't sail past the ceiling and fail after the volunteer has
+  // already seen the success screen.
+  const MAX_TOTAL_BYTES = 35 * 1024 * 1024;
+  const IMAGE_MAX_EDGE = 2560;              // ample for flyers, eNews banners, recap grids
+  const IMAGE_QUALITY = 0.88;
 
-  const handleFiles = (newFiles) => {
-    const fileArray = Array.from(newFiles);
-    const valid = fileArray.filter(f => {
-      if (f.size > MAX_BYTES) {
-        alert(`"${f.name}" is too large (max 50 MB per file). Please share a link instead.`);
-        return false;
+  // Phone photos run 3–5 MB each, so 15 of them would blow the payload ceiling.
+  // Downscale images in the browser first; leave documents and video alone.
+  const shrinkImage = (file) => new Promise((resolve) => {
+    if (!file.type.startsWith('image/') || /gif|svg/.test(file.type)) { resolve(file); return; }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const longEdge = Math.max(img.width, img.height);
+      if (longEdge <= IMAGE_MAX_EDGE && file.size <= 2 * 1024 * 1024) {
+        URL.revokeObjectURL(url); resolve(file); return;
       }
-      return true;
-    });
-    setFiles(prev => [...prev, ...valid].slice(0, 5));
+      const scale = Math.min(1, IMAGE_MAX_EDGE / longEdge);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        URL.revokeObjectURL(url);
+        if (!blob || blob.size >= file.size) { resolve(file); return; }
+        const name = file.name.replace(/\.(heic|heif|png|webp|tiff?|bmp)$/i, '.jpg');
+        const out = new File([blob], name, { type: 'image/jpeg', lastModified: file.lastModified });
+        out.originalSize = file.size;
+        resolve(out);
+      }, 'image/jpeg', IMAGE_QUALITY);
+    };
+    // HEIC and anything the browser can't decode falls through unchanged.
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+
+  const handleFiles = async (newFiles) => {
+    const incoming = Array.from(newFiles);
+    if (!incoming.length) return;
+
+    setPreparing(true);
+    const processed = [];
+    const tooBig = [];
+    for (const f of incoming) {
+      const out = await shrinkImage(f);
+      if (out.size > MAX_BYTES) { tooBig.push(f.name); continue; }
+      processed.push(out);
+    }
+    setPreparing(false);
+
+    const kept = [...files];
+    let total = kept.reduce((sum, f) => sum + f.size, 0);
+    const rejected = tooBig.map(n => `${n} — over 35 MB`);
+    for (const f of processed) {
+      if (kept.length >= MAX_FILES) { rejected.push(`${f.name} — over the ${MAX_FILES}-file limit`); continue; }
+      if (total + f.size > MAX_TOTAL_BYTES) { rejected.push(`${f.name} — would push this submission past 35 MB total`); continue; }
+      kept.push(f);
+      total += f.size;
+    }
+    setFiles(kept);
+
+    if (rejected.length) {
+      alert('These files were not added:\n\n' + rejected.join('\n') +
+        '\n\nPlease send them in a second submission, or paste a Google Drive or Dropbox link in the link field below.');
+    }
   };
 
   const removeFile = (idx) => setFiles(prev => prev.filter((_, i) => i !== idx));
   const fmtSize = (b) => b < 1024 ? b + ' B' : b < 1024*1024 ? (b/1024).toFixed(1)+' KB' : (b/(1024*1024)).toFixed(1)+' MB';
+  const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
 
   const labelText = label || 'Upload Materials';
   const hintText = hint || 'Flyers, graphics, logos, or documents';
@@ -556,28 +623,86 @@ function FileUpload({ files, setFiles, label, hint, accept }) {
     <div className="form-group">
       <label>
         {labelText}
-        <span className="hint">{hintText} — max 5 files, each under 50 MB</span>
+        <span className="hint">{hintText} — up to {MAX_FILES} files, 35 MB total. Large photos are resized automatically.</span>
       </label>
       <div className={`upload-area ${dragover ? 'dragover' : ''}`}
            onDragOver={(e) => { e.preventDefault(); setDragover(true); }}
            onDragLeave={() => setDragover(false)}
            onDrop={(e) => { e.preventDefault(); setDragover(false); handleFiles(e.dataTransfer.files); }}>
         <input type="file" multiple accept={acceptValue}
-               onChange={(e) => handleFiles(e.target.files)} />
+               onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }} />
         <div className="upload-icon">&#8682;</div>
         <div className="upload-text"><strong>Click to upload</strong> or drag and drop</div>
       </div>
+      {preparing && <div className="upload-note">Preparing files&hellip;</div>}
       {files.length > 0 && (
         <div className="file-list">
           {files.map((f, i) => (
             <div key={i} className="file-item">
-              <span className="file-name">{f.name}</span>
+              <span className="file-name">{f.name}{f.originalSize ? ' (resized)' : ''}</span>
               <span className="file-size">{fmtSize(f.size)}</span>
               <button type="button" className="remove-btn" onClick={() => removeFile(i)} title="Remove">&times;</button>
             </div>
           ))}
+          <div className="file-total">{files.length} of {MAX_FILES} files &middot; {fmtSize(totalBytes)} of 35 MB</div>
         </div>
       )}
+    </div>
+  );
+}
+
+// One short video, sent the same way the photos are. Anything longer than a few
+// seconds has to travel as a link — see the note this renders.
+function VideoUpload({ video, setVideo, photoBytes }) {
+  const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
+  const BUDGET_BYTES = 35 * 1024 * 1024;
+  const fmtSize = (b) => b < 1024*1024 ? (b/1024).toFixed(1)+' KB' : (b/(1024*1024)).toFixed(1)+' MB';
+
+  const handleVideo = (picked) => {
+    const f = Array.from(picked)[0];
+    if (!f) return;
+    if (f.size > MAX_VIDEO_BYTES) {
+      alert(`"${f.name}" is ${fmtSize(f.size)} — too large to upload here (30 MB maximum).\n\n` +
+        'Please paste a link to it in the "Video Link" field instead. Upload it to Google Photos, ' +
+        'Google Drive, Dropbox, or iCloud, then copy the share link.');
+      return;
+    }
+    if (photoBytes + f.size > BUDGET_BYTES) {
+      alert(`"${f.name}" (${fmtSize(f.size)}) plus your photos (${fmtSize(photoBytes)}) is over the ` +
+        '35 MB this form can carry in one submission.\n\nEither remove some photos, or send the video ' +
+        'as a link in the "Video Link" field.');
+      return;
+    }
+    setVideo(f);
+  };
+
+  return (
+    <div className="form-group">
+      <label>
+        Upload a Short Video
+        <span className="hint">One video at a time, 30 MB maximum &mdash; that is roughly 20 seconds of phone video</span>
+      </label>
+      <div className="upload-area">
+        <input type="file" accept="video/*"
+               onChange={(e) => { handleVideo(e.target.files); e.target.value = ''; }} />
+        <div className="upload-icon">&#8682;</div>
+        <div className="upload-text"><strong>Click to choose one video</strong></div>
+      </div>
+      {video && (
+        <div className="file-list">
+          <div className="file-item">
+            <span className="file-name">{video.name}</span>
+            <span className="file-size">{fmtSize(video.size)}</span>
+            <button type="button" className="remove-btn" onClick={() => setVideo(null)} title="Remove">&times;</button>
+          </div>
+        </div>
+      )}
+      <div className="upload-note">
+        <strong>Most videos are too big to upload.</strong> A minute of phone video is 65 MB or more, and 4K is
+        several hundred. If your video will not go through above, send it as a link instead: upload it to
+        Google Photos, Google Drive, Dropbox, or iCloud, then paste the share link in the <strong>Video Link</strong>{' '}
+        field below. Please send one video per submission either way.
+      </div>
     </div>
   );
 }
@@ -591,6 +716,7 @@ function App() {
   const [status, setStatus] = React.useState(null);
   const [errorMsg, setErrorMsg] = React.useState('');
   const [files, setFiles] = React.useState([]);
+  const [video, setVideo] = React.useState(null);
 
   // Deep-link support: a "mode" query param or hash (e.g. ?mode=prayer or
   // #prayer) jumps straight to that page on load, skipping the chooser.
@@ -636,10 +762,27 @@ function App() {
       return;
     }
 
+    // The video rides along in the same files array, so it lands in the same
+    // Drive folder as the photos and needs no separate handling downstream.
+    const outgoing = video ? [...files, video] : files;
+
+    // Everything below goes up base64-encoded in a single POST, and Apps Script
+    // stops accepting somewhere near 50 MB. Because the form posts no-cors, an
+    // over-size submission would fail invisibly and still show the success
+    // screen — so refuse it here, where we can still say why.
+    const rawBytes = outgoing.reduce((sum, f) => sum + f.size, 0);
+    if (rawBytes > 35 * 1024 * 1024) {
+      setStatus('error');
+      setErrorMsg('This submission is too large to send (' + (rawBytes/(1024*1024)).toFixed(1) +
+        ' MB of files; the limit is 35 MB). Please remove a few files and send them in a second ' +
+        'submission, or paste a Google Drive or Dropbox link in the link field instead.');
+      return;
+    }
+
     setStatus('submitting');
     try {
       const fileData = await Promise.all(
-        files.map(async (f) => ({ name: f.name, type: f.type, size: f.size, data: await fileToBase64(f) }))
+        outgoing.map(async (f) => ({ name: f.name, type: f.type, size: f.size, data: await fileToBase64(f) }))
       );
       const payload = {
         timestamp: new Date().toISOString(),
@@ -728,6 +871,7 @@ function App() {
     setStatus(null);
     setErrorMsg('');
     setFiles([]);
+    setVideo(null);
   };
 
   // ─── Success Screen ──────────────────────────────────────────
@@ -1168,7 +1312,8 @@ function App() {
         <span className="back-link" onClick={resetAll}>&larr; Back to options</span>
 
         <div className="intro">
-          Submit photos or a video from a church event you attended, along with a brief reflection on what happened.
+          Submit photos or a short video from a church event you attended, along with a brief reflection on what happened.
+          Photos upload right here; most videos are too large to upload, so there is a place below to paste a link to one instead.
           <br/><br/>
           <strong>Adding a link to any text field:</strong> put the URL in parentheses right after the text you want to make clickable — for example, <strong>Sign up here (https://signup.example.com)</strong>.
         </div>
@@ -1193,8 +1338,13 @@ function App() {
             hint="JPG, PNG, HEIC, or GIF — landscape and close-ups are both welcome"
             accept="image/*"
           />
-          <Field name="materialsLink" label="Link to Additional Media" hint="Got videos or more photos than fit here? Paste a Google Drive, Dropbox, or iCloud link" {...fp}>
-            <input type="url" name="materialsLink" value={formData.materialsLink||''} onChange={handleChange} placeholder="https://drive.google.com/..." />
+        </div>
+
+        <div className="form-section">
+          <h2>Video</h2>
+          <VideoUpload video={video} setVideo={setVideo} photoBytes={files.reduce((sum, f) => sum + f.size, 0)} />
+          <Field name="materialsLink" label="Video Link" hint="The reliable way to send video, and the place for extra photos too — a Google Photos, Google Drive, Dropbox, or iCloud share link" {...fp}>
+            <input type="url" name="materialsLink" value={formData.materialsLink||''} onChange={handleChange} placeholder="https://photos.app.goo.gl/..." />
           </Field>
         </div>
 
