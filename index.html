@@ -210,6 +210,13 @@
     }
     .choice input { width: auto; margin: 0; accent-color: var(--purple); }
     .choice.selected { border-color: var(--purple); background: rgba(104, 23, 235, 0.06); font-weight: 500; }
+    .choice.path { align-items: flex-start; padding: 0.9rem 1rem; }
+    .choice.path input { margin-top: 0.2rem; }
+    .choice .path-title { display: block; font-weight: 700; font-size: 1rem; color: var(--purple); }
+    .choice .path-desc { display: block; font-weight: 400; font-size: 0.85rem; color: var(--text-light); margin-top: 0.15rem; }
+    .choice-error { color: var(--error); font-size: 0.8rem; margin-top: 0.35rem; }
+    .check-line { display: flex; align-items: center; gap: 0.6rem; font-weight: 500; cursor: pointer; }
+    .check-line input { width: auto; margin: 0; accent-color: var(--purple); }
 
     /* ─── Mode Selector Cards ─── */
     /* Flexbox + center justification so a partial row (e.g., 2 of 3) sits
@@ -796,6 +803,8 @@ function App() {
         timestamp: new Date().toISOString(),
         submissionType: mode,
         ...formData,
+        ...(mode === 'prayer' && formData.requestKind === 'care' && !formData.alsoPray
+          ? { prayerFor: '', prayerType: '', prayerRequest: '', prayerDistribution: '' } : {}),
         ...(formData.startTime ? { startTime: to12h(formData.startTime) } : {}),
         ...(formData.endTime ? { endTime: to12h(formData.endTime) } : {}),
         files: fileData
@@ -834,14 +843,17 @@ function App() {
       if (!formData.contactEmail?.trim()) errs.contactEmail = 'Contact email is required';
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) errs.contactEmail = 'Please enter a valid email';
     } else if (mode === 'prayer') {
-      // Someone asking only for a call, a visit, or Communion doesn't have to
-      // write a prayer request (Scott, 2026-10-09). If they do write one, they
-      // still choose where it's shared.
-      const careOnly = !!formData.pastorFollowUp;
-      if (!careOnly && !formData.prayerFor?.trim()) errs.prayerFor = 'Please tell us who this prayer is for';
-      if (!careOnly && !formData.prayerRequest?.trim()) errs.prayerRequest = 'Please share the prayer request';
-      if ((!careOnly || formData.prayerRequest?.trim()) && !formData.prayerDistribution) errs.prayerDistribution = 'Please choose where to share this prayer';
-      if (formData.pastorFollowUp && !formData.contactPhone?.trim()) errs.contactPhone = 'Please give a phone number so someone from our Nurture Team can reach you';
+      // Two paths (Scott, 2026-10-09): "Share a prayer request" or "Talk with
+      // someone." The care path needs no prayer text unless they tick "pray
+      // for something too"; the prayer path can still add a follow-up.
+      const kind = formData.requestKind;
+      const wantsPrayer = kind === 'prayer' || (kind === 'care' && formData.alsoPray);
+      if (!kind) errs.requestKind = 'Please choose one of the two options above';
+      if (kind === 'care' && !formData.pastorFollowUp) errs.pastorFollowUp = 'Please choose a phone call, a visit, or Communion';
+      if (wantsPrayer && !formData.prayerFor?.trim()) errs.prayerFor = 'Please tell us who this prayer is for';
+      if (wantsPrayer && !formData.prayerRequest?.trim()) errs.prayerRequest = 'Please share the prayer request';
+      if (wantsPrayer && !formData.prayerDistribution) errs.prayerDistribution = 'Please choose where to share this prayer';
+      if (kind && formData.pastorFollowUp && !formData.contactPhone?.trim()) errs.contactPhone = 'Please give a phone number so someone from our Nurture Team can reach you';
       if (!formData.contactName?.trim()) errs.contactName = 'Your name is required';
       if (!formData.contactEmail?.trim()) errs.contactEmail = 'Your email is required';
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) errs.contactEmail = 'Please enter a valid email';
@@ -902,7 +914,7 @@ function App() {
       fundraiser: 'Fundraiser Submitted!',
       recap: 'Photos Submitted!'
     };
-    if (mode === 'prayer' && formData.pastorFollowUp) {
+    if (mode === 'prayer' && formData.requestKind === 'care') {
       titles.prayer = 'Request Received!';
       messages.prayer = "Thank you for reaching out. Someone from our Nurture Team will be in touch soon; in the meantime, please know that we're holding you in prayer. Peace be with you.";
     }
@@ -1261,81 +1273,134 @@ function App() {
   }
 
   // ─── PRAYER REQUEST FORM ─────────────────────────────────────
+  // Opens with two paths so that a person who wants a call or a visit and a
+  // person who only wants prayer each see their own form (Scott, 2026-10-09).
   if (mode === 'prayer') {
-    const careOnly = !!formData.pastorFollowUp;
+    const kind = formData.requestKind;
+    const care = kind === 'care';
+    const wantsPrayer = kind === 'prayer' || (care && formData.alsoPray);
+    const radio = (name, v, content, cls) => {
+      const on = (formData[name] || '') === v;
+      return (
+        <label key={v || 'none'} className={'choice' + (cls ? ' ' + cls : '') + (on ? ' selected' : '')}>
+          <input type="radio" name={name} value={v} checked={on} onChange={handleChange} />
+          <span>{content}</span>
+        </label>
+      );
+    };
+    const followUpLabel = o => o.startsWith('A ') ? 'a' + o.slice(1) : o;
+    const phoneField = formData.pastorFollowUp && (
+      <Field name="contactPhone" label="Your Phone" required type="tel" hint="Someone from our Nurture Team will use this number to call you or to set up a time to visit." {...fp} />
+    );
+    const prayerFields = (
+      <>
+        <div className="privacy-note">
+          You choose below where this prayer is shared. Whatever you write here stays confidential with Pastor Scott — only a publication version, written to match your sharing preference, ever appears in print.
+        </div>
+        <Field name="prayerFor" label="Who is this prayer for?" required hint="A name, a family, or a situation — including yourself" {...fp} />
+        <Field name="prayerType" label="What kind of prayer is this?" hint="Optional — it's not only for hard news" {...fp}>
+          <select name="prayerType" value={formData.prayerType||''} onChange={handleChange}>
+            <option value="">— Select (optional) —</option>
+            {PRAYER_TYPE_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </Field>
+        <Field name="prayerRequest" label="Prayer Request Details" required hint="Share as much or as little as you'd like — this stays confidential with Pastor Scott" {...fp}>
+          <textarea name="prayerRequest" value={formData.prayerRequest||''} onChange={handleChange}
+                    className={errors.prayerRequest?'invalid':''}
+                    placeholder="Please share what you'd like us to pray for..." />
+        </Field>
+        <Field name="prayerDistribution" label="Where would you like this prayer shared?" required hint="If you're praying for someone else by name, please make sure they're comfortable with your choice" {...fp}>
+          <select name="prayerDistribution" value={formData.prayerDistribution||''} onChange={handleChange}
+                  className={errors.prayerDistribution?'invalid':''}>
+            <option value="">— Select —</option>
+            {PRAYER_DISTRIBUTION_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </Field>
+      </>
+    );
     return (
       <form onSubmit={handleSubmit}>
         <span className="back-link" onClick={resetAll}>&larr; Back to options</span>
 
         <div className="intro">
-          <strong>Share a prayer request, or ask someone to reach out.</strong> Our Nurture Team makes phone calls and visits, and they'll bring Communion to you at home or in the hospital. Prayers of concern, joy, grief, celebration, and thanksgiving are all welcome here. Pastor Scott reads every request personally.
+          <strong>Share a prayer request, or ask someone from our Nurture Team to reach out.</strong> Pastor Scott reads every request personally.
         </div>
 
         <div className="form-section">
           <h2>How Can We Help?</h2>
           <div className="form-group">
-            <label>Would you like someone from our Nurture Team to reach out?</label>
+            <label>What would you like to do?</label>
             <div className="choice-list">
-              {[['', 'No, just prayer'], ...PRAYER_FOLLOWUP_OPTIONS.map(o => [o, 'Yes, ' + (o.startsWith('A ') ? 'a' + o.slice(1) : o)])].map(([v, text]) => {
-                const on = (formData.pastorFollowUp || '') === v;
-                return (
-                  <label key={v || 'none'} className={'choice' + (on ? ' selected' : '')}>
-                    <input type="radio" name="pastorFollowUp" value={v} checked={on} onChange={handleChange} />
-                    {text}
-                  </label>
-                );
-              })}
+              {radio('requestKind', 'prayer', <><span className="path-title">Share a prayer request</span><span className="path-desc">For yourself or someone you love; you choose who sees it.</span></>, 'path')}
+              {radio('requestKind', 'care', <><span className="path-title">Talk with someone</span><span className="path-desc">Ask for a phone call, a visit, or Communion at home or in the hospital.</span></>, 'path')}
             </div>
+            {errors.requestKind && <div className="choice-error">{errors.requestKind}</div>}
           </div>
-          {careOnly && (
-            <Field name="contactPhone" label="Your Phone" required type="tel" hint="Someone from our Nurture Team will use this number to call you or to set up a time to visit." {...fp} />
-          )}
         </div>
 
-        <div className="form-section">
-          <h2>{careOnly ? 'Prayer Request (optional)' : 'Prayer Request'}</h2>
-          {careOnly && (
-            <p className="hint" style={{marginBottom:'0.75rem', fontSize:'0.85rem', color:'var(--text-light)'}}>If you'd like prayer too, share it here. Otherwise, you can skip this section.</p>
-          )}
-          <div className="privacy-note">
-            You choose below where this prayer is shared. Whatever you write here stays confidential with Pastor Scott — only a publication version, written to match your sharing preference, ever appears in print.
+        {care && (
+          <div className="form-section">
+            <h2>Talk with Someone</h2>
+            <div className="form-group">
+              <label>What would you like?<span className="required">*</span></label>
+              <div className="choice-list">
+                {PRAYER_FOLLOWUP_OPTIONS.map(o => radio('pastorFollowUp', o, o))}
+              </div>
+              {errors.pastorFollowUp && <div className="choice-error">{errors.pastorFollowUp}</div>}
+            </div>
+            {phoneField}
+            <Field name="prayerNotes" label="Is there anything we should know before we reach out?" hint="For example, the best time to call, or the hospital and room number." {...fp}>
+              <textarea name="prayerNotes" value={formData.prayerNotes||''} onChange={handleChange}
+                        placeholder="Optional" />
+            </Field>
+            <div className="form-group">
+              <label className="check-line">
+                <input type="checkbox" name="alsoPray" checked={!!formData.alsoPray} onChange={handleChange} />
+                Would you like us to pray for something too?
+              </label>
+            </div>
+            {formData.alsoPray && prayerFields}
           </div>
-          <Field name="prayerFor" label="Who is this prayer for?" required={!careOnly} hint="A name, a family, or a situation — including yourself" {...fp} />
-          <Field name="prayerType" label="What kind of prayer is this?" hint="Optional — it's not only for hard news" {...fp}>
-            <select name="prayerType" value={formData.prayerType||''} onChange={handleChange}>
-              <option value="">— Select (optional) —</option>
-              {PRAYER_TYPE_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </Field>
-          <Field name="prayerRequest" label="Prayer Request Details" required={!careOnly} hint="Share as much or as little as you'd like — this stays confidential with Pastor Scott" {...fp}>
-            <textarea name="prayerRequest" value={formData.prayerRequest||''} onChange={handleChange}
-                      className={errors.prayerRequest?'invalid':''}
-                      placeholder="Please share what you'd like us to pray for..." />
-          </Field>
-          <Field name="prayerDistribution" label="Where would you like this prayer shared?" required={!careOnly || !!formData.prayerRequest?.trim()} hint="If you're praying for someone else by name, please make sure they're comfortable with your choice" {...fp}>
-            <select name="prayerDistribution" value={formData.prayerDistribution||''} onChange={handleChange}
-                    className={errors.prayerDistribution?'invalid':''}>
-              <option value="">— Select —</option>
-              {PRAYER_DISTRIBUTION_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </Field>
-        </div>
+        )}
 
-        <div className="form-section">
-          <h2>Your Information</h2>
-          <div className="row">
-            <Field name="contactName" label="Your Name" required hint="So we can follow up if needed" {...fp} />
-            <Field name="contactEmail" label="Your Email" required type="email" {...fp} />
+        {kind === 'prayer' && (
+          <div className="form-section">
+            <h2>Prayer Request</h2>
+            <p style={{fontSize:'0.85rem', color:'var(--text-light)', marginBottom:'0.75rem'}}>Prayers of concern, joy, grief, celebration, and thanksgiving are all welcome here.</p>
+            {prayerFields}
+            <div className="form-group">
+              <label>Would you also like someone from our Nurture Team to reach out?
+                <span className="hint">Optional</span>
+              </label>
+              <div className="choice-list">
+                {[['', 'No, just prayer'], ...PRAYER_FOLLOWUP_OPTIONS.map(o => [o, 'Yes, ' + followUpLabel(o)])].map(([v, t]) => radio('pastorFollowUp', v, t))}
+              </div>
+            </div>
+            {phoneField}
           </div>
-          <Field name="prayerNotes" label="Anything Else?" hint={careOnly ? "For example, the best time to call, or the hospital and room number." : "Additional context, updates, or special instructions — e.g., use first name only, or please don't share my name publicly"} {...fp}>
-            <textarea name="prayerNotes" value={formData.prayerNotes||''} onChange={handleChange}
-                      placeholder="Optional — any additional details..." />
-          </Field>
-        </div>
+        )}
 
-        <button type="submit" className="submit-btn" disabled={status==='submitting'}>
-          {status==='submitting' ? 'Submitting...' : (careOnly ? 'Send My Request' : 'Submit Prayer Request')}
-        </button>
+        {kind && (
+          <div className="form-section">
+            <h2>Your Information</h2>
+            <div className="row">
+              <Field name="contactName" label="Your Name" required hint="So we can follow up if needed" {...fp} />
+              <Field name="contactEmail" label="Your Email" required type="email" {...fp} />
+            </div>
+            {kind === 'prayer' && (
+              <Field name="prayerNotes" label="Anything Else?" hint="Additional context, updates, or special instructions — e.g., use first name only, or please don't share my name publicly" {...fp}>
+                <textarea name="prayerNotes" value={formData.prayerNotes||''} onChange={handleChange}
+                          placeholder="Optional — any additional details..." />
+              </Field>
+            )}
+          </div>
+        )}
+
+        {kind && (
+          <button type="submit" className="submit-btn" disabled={status==='submitting'}>
+            {status==='submitting' ? 'Submitting...' : (care ? 'Send My Request' : 'Submit Prayer Request')}
+          </button>
+        )}
         {status==='error' && <div className="status-msg error">{errorMsg}</div>}
       </form>
     );
