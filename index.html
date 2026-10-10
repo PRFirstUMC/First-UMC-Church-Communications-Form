@@ -507,6 +507,13 @@ const PRAYER_TYPE_OPTIONS = [
   'Other'
 ];
 
+// Follow-up choices for the prayer form (Scott, 2026-10-09: "a phone call or a visit").
+const PRAYER_FOLLOWUP_OPTIONS = [
+  'A phone call',
+  'A visit',
+  'Communion at home or in the hospital'
+];
+
 const PRAYER_DISTRIBUTION_OPTIONS = [
   'Just with Pastor Scott (confidential)',
   'With our Prayer Tree email list (confidential circle of members who pray for one another)',
@@ -816,6 +823,7 @@ function App() {
       if (!formData.prayerFor?.trim()) errs.prayerFor = 'Please tell us who this prayer is for';
       if (!formData.prayerRequest?.trim()) errs.prayerRequest = 'Please share the prayer request';
       if (!formData.prayerDistribution) errs.prayerDistribution = 'Please choose where to share this prayer';
+      if (formData.pastorFollowUp && !formData.contactPhone?.trim()) errs.contactPhone = 'Please give a phone number so Pastor Scott can reach you';
       if (!formData.contactName?.trim()) errs.contactName = 'Your name is required';
       if (!formData.contactEmail?.trim()) errs.contactEmail = 'Your email is required';
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) errs.contactEmail = 'Please enter a valid email';
@@ -1264,11 +1272,12 @@ function App() {
               {PRAYER_DISTRIBUTION_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </Field>
-          <label style={{display:'flex',alignItems:'flex-start',gap:'0.5rem',marginTop:'0.75rem',cursor:'pointer'}}>
-            <input type="checkbox" name="pastorFollowUp" checked={!!formData.pastorFollowUp} onChange={handleChange}
-                   style={{marginTop:'0.25rem'}} />
-            <span>I'd like Pastor Scott to reach out to me personally about this.</span>
-          </label>
+          <Field name="pastorFollowUp" label="Would you like Pastor Scott to reach out?" hint="Optional. Choose a phone call, a visit, or Communion brought to you" {...fp}>
+            <select name="pastorFollowUp" value={formData.pastorFollowUp||''} onChange={handleChange}>
+              <option value="">No, just prayer</option>
+              {PRAYER_FOLLOWUP_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </Field>
         </div>
 
         <div className="form-section">
@@ -1277,6 +1286,9 @@ function App() {
             <Field name="contactName" label="Your Name" required hint="So we can follow up if needed" {...fp} />
             <Field name="contactEmail" label="Your Email" required type="email" {...fp} />
           </div>
+          {formData.pastorFollowUp && (
+            <Field name="contactPhone" label="Your Phone" required type="tel" hint="So Pastor Scott can call you or set up a time to visit" {...fp} />
+          )}
           <Field name="prayerNotes" label="Anything Else?" hint="Additional context, updates, or special instructions — e.g., use first name only, or please don't share my name publicly" {...fp}>
             <textarea name="prayerNotes" value={formData.prayerNotes||''} onChange={handleChange}
                       placeholder="Optional — any additional details..." />
