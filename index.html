@@ -823,7 +823,7 @@ function App() {
       if (!formData.prayerFor?.trim()) errs.prayerFor = 'Please tell us who this prayer is for';
       if (!formData.prayerRequest?.trim()) errs.prayerRequest = 'Please share the prayer request';
       if (!formData.prayerDistribution) errs.prayerDistribution = 'Please choose where to share this prayer';
-      if (formData.pastorFollowUp && !formData.contactPhone?.trim()) errs.contactPhone = 'Please give a phone number so Pastor Scott can reach you';
+      if (formData.pastorFollowUp && !formData.contactPhone?.trim()) errs.contactPhone = 'Please give a phone number so someone from our Nurture Team can reach you';
       if (!formData.contactName?.trim()) errs.contactName = 'Your name is required';
       if (!formData.contactEmail?.trim()) errs.contactEmail = 'Your email is required';
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) errs.contactEmail = 'Please enter a valid email';
@@ -873,7 +873,7 @@ function App() {
     const messages = {
       event: "Thank you! The communications team will review your submission and begin promoting your event. You'll be contacted if we have any questions.",
       announcement: "Thank you! The communications team will review your announcement and get it into the bulletin and eNews. You'll be contacted if we need anything.",
-      prayer: "Thank you for trusting us with this. Please know that Pastor Scott and our prayer community will be holding you and those you've named in prayer. If you asked for a personal follow-up, Scott will reach out soon. Peace be with you.",
+      prayer: "Thank you for trusting us with this. Please know that Pastor Scott and our prayer community will be holding you and those you've named in prayer. If you asked for a personal follow-up, someone from our Nurture Team will reach out soon. Peace be with you.",
       fundraiser: "Thank you! The communications team will start building promotional materials for your fundraiser. If you indicated a culminating event, we'll set that up alongside the campaign. You'll be contacted if we have any questions.",
       recap: "Thank you for sharing this! Our communications team will review the photos and your reflection, and decide where they'll appear — likely the eNews or the website. We'll be in touch if we have any questions."
     };
@@ -1272,7 +1272,7 @@ function App() {
               {PRAYER_DISTRIBUTION_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </Field>
-          <Field name="pastorFollowUp" label="Would you like Pastor Scott to reach out?" hint="Optional. Choose a phone call, a visit, or Communion brought to you" {...fp}>
+          <Field name="pastorFollowUp" label="Would you like someone from our Nurture Team to reach out?" hint="Optional. Choose a phone call, a visit, or Communion brought to you" {...fp}>
             <select name="pastorFollowUp" value={formData.pastorFollowUp||''} onChange={handleChange}>
               <option value="">No, just prayer</option>
               {PRAYER_FOLLOWUP_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
@@ -1287,7 +1287,7 @@ function App() {
             <Field name="contactEmail" label="Your Email" required type="email" {...fp} />
           </div>
           {formData.pastorFollowUp && (
-            <Field name="contactPhone" label="Your Phone" required type="tel" hint="So Pastor Scott can call you or set up a time to visit" {...fp} />
+            <Field name="contactPhone" label="Your Phone" required type="tel" hint="So someone from our Nurture Team can call you or set up a time to visit" {...fp} />
           )}
           <Field name="prayerNotes" label="Anything Else?" hint="Additional context, updates, or special instructions — e.g., use first name only, or please don't share my name publicly" {...fp}>
             <textarea name="prayerNotes" value={formData.prayerNotes||''} onChange={handleChange}
